@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	zfsdriver "github.com/TrilliumIT/docker-zfs-plugin/zfs"
+	zfsdriver "github.com/apetresc/docker-zfs-plugin/zfs"
 	"github.com/coreos/go-systemd/activation"
 	"github.com/docker/go-plugins-helpers/volume"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version         = "1.0.5"
+	version         = "1.1.0"
 	shutdownTimeout = 10 * time.Second
 )
 
@@ -30,7 +30,7 @@ func main() {
 	app.Usage = "Docker ZFS Plugin"
 	app.Version = version
 	app.Flags = []cli.Flag{
-		cli.StringSliceFlag{
+		cli.StringFlag{
 			Name:  "dataset-name",
 			Usage: "Name of the ZFS dataset to be used. It will be created if it doesn't exist.",
 		},
@@ -59,7 +59,7 @@ func Run(ctx *cli.Context) error {
 		return fmt.Errorf("zfs dataset name is a required field")
 	}
 
-	d, err := zfsdriver.NewZfsDriver(ctx.StringSlice("dataset-name")...)
+	d, err := zfsdriver.NewZfsDriver(ctx.String("dataset-name"))
 	if err != nil {
 		return err
 	}
