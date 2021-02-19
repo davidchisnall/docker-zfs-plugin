@@ -30,7 +30,7 @@ func main() {
 	app.Usage = "Docker ZFS Plugin"
 	app.Version = version
 	app.Flags = []cli.Flag{
-		cli.StringSliceFlag{
+		cli.StringFlag{
 			Name:  "dataset-name",
 			Usage: "Name of the ZFS dataset to be used. It will be created if it doesn't exist.",
 		},
@@ -59,7 +59,7 @@ func Run(ctx *cli.Context) error {
 		return fmt.Errorf("zfs dataset name is a required field")
 	}
 
-	d, err := zfsdriver.NewZfsDriver(ctx.StringSlice("dataset-name")...)
+	d, err := zfsdriver.NewZfsDriver(ctx.String("dataset-name"))
 	if err != nil {
 		return err
 	}

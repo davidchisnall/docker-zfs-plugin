@@ -12,17 +12,13 @@ import (
 //ZfsDriver implements the plugin helpers volume.Driver interface for zfs
 type ZfsDriver struct {
 	volume.Driver
-	rds []*zfs.Dataset //root dataset
+	rds *zfs.Dataset //root dataset
 }
 
 //NewZfsDriver returns the plugin driver object
-func NewZfsDriver(dss ...string) (*ZfsDriver, error) {
+func NewZfsDriver(ds string) (*ZfsDriver, error) {
 	log.Debug("Creating new ZfsDriver.")
 	zd := &ZfsDriver{}
-	if len(dss) < 1 {
-		return nil, fmt.Errorf("No datasets specified")
-	}
-	for _, ds := range dss {
 		if !zfs.DatasetExists(ds) {
 			_, err := zfs.CreateDatasetRecursive(ds, make(map[string]string))
 			if err != nil {
@@ -35,8 +31,7 @@ func NewZfsDriver(dss ...string) (*ZfsDriver, error) {
 			log.Error("Failed to get root dataset.")
 			return nil, err
 		}
-		zd.rds = append(zd.rds, rds)
-	}
+	zd.rds = rds
 
 	return zd, nil
 }
@@ -58,8 +53,7 @@ func (zd *ZfsDriver) List() (*volume.ListResponse, error) {
 	log.Debug("List")
 	var vols []*volume.Volume
 
-	for _, rds := range zd.rds {
-		dsl, err := rds.DatasetList()
+	dsl, err := zd.rds.DatasetList()
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +68,6 @@ func (zd *ZfsDriver) List() (*volume.ListResponse, error) {
 			}
 			vols = append(vols, &volume.Volume{Name: ds.Name, Mountpoint: mp})
 		}
-	}
 
 	return &volume.ListResponse{Volumes: vols}, nil
 }
