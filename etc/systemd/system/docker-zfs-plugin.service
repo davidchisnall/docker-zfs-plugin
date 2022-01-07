@@ -5,11 +5,11 @@ Before=docker.service
 Requires=zfs-mount.service zfs-import-cache.service
 
 #Recommended condition for each pool you intend to use
-ConditionPathIsMountPoint=/var/lib/docker-volumes/zfs/tank
+ConditionPathIsMountPoint=/var/lib/docker/volumes
 
 
 [Service]
-ExecStart=/usr/local/bin/docker-zfs-plugin --dataset-name tank/docker-volumes
+ExecStart=/usr/bin/docker-zfs-plugin --dataset-name rpool/DATA/docker-volumes
 
 [Install]
 WantedBy=docker.service
