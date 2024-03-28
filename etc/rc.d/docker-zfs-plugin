@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# REQUIRE: zfs
+# BEFORE: podman_service
+
+# Add the following to /etc/rc.conf[.local] to enable this service
+#
+# docker_zfs_plugin_enable:  Set to NO by default.
+#                            Set it to YES to start service 
+# docker_zfs_plugin_socket:  Path for the socket (/var/run/docker-zfs-plugin by default)
+#                            This must match the entry in the [engine.volume_plugins] section of containers.conf
+# docker_zfs_plugin_dataset: Dataset to use for containers.
+#                            Defaults to zroot/containers/volumes
+# docker_zfs_plugin_log:     Log file for messages from this plugin.
+#                            Defaults to /var/log/podman.log (the podman service log location)
+
+. /etc/rc.subr
+
+name=docker_zfs_plugin
+rcvar=${name}_enable
+
+: ${docker_zfs_plugin_enable:=NO}
+: ${docker_zfs_plugin_socket:="/var/run/docker-zfs-plugin"}
+: ${docker_zfs_plugin_dataset:="zroot/containers/volumes"}
+: ${docker_zfs_plugin_log:="/var/log/podman.log"}
+
+command="/usr/local/bin/docker-zfs-plugin"
+pidfile="/var/run/$name.pid"
+start_cmd="docker_zfs_plugin_start"
+
+docker_zfs_plugin_start()
+{
+    startmsg "Starting ${name}."
+    /usr/sbin/daemon -r -o ${docker_zfs_plugin_log} -f -p ${pidfile} ${command}  --dataset-name ${docker_zfs_plugin_dataset} --socket-path ${docker_zfs_plugin_socket}
+}
+
+load_rc_config ${name}
+run_rc_command "$1"
+
