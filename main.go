@@ -85,7 +85,9 @@ func Run(ctx *cli.Context) error {
 			go func() { errCh <- h.Serve(l) }()
 		}
 	} else {
+		oldUmask := syscall.Umask(0177)
 		socket, err := net.Listen("unix", ctx.String("socket-path"))
+		syscall.Umask(oldUmask)
 		if err != nil {
 			panic(err)
 		}
