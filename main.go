@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,6 +34,10 @@ func main() {
 		cli.StringFlag{
 			Name:  "dataset-name",
 			Usage: "Name of the ZFS dataset to be used. It will be created if it doesn't exist.",
+		},
+		cli.StringFlag{
+			Name:  "socket-path",
+			Usage: "Path of the socket to listen on, if systemd socket activation is not used.",
 		},
 		cli.BoolFlag{
 			Name:        "verbose",
@@ -66,17 +71,26 @@ func Run(ctx *cli.Context) error {
 	h := volume.NewHandler(d)
 	errCh := make(chan error)
 
-	listeners, _ := activation.Listeners() // wtf coreos, this funciton never returns errors
-	if len(listeners) > 1 {
-		log.Warn("driver does not support multiple sockets")
-	}
-	if len(listeners) == 0 {
-		log.Debug("launching volume handler.")
-		go func() { errCh <- h.ServeUnix("zfs", 0) }()
+	if ctx.String("socket-path") == "" {
+		listeners, _ := activation.Listeners() // wtf coreos, this funciton never returns errors
+		if len(listeners) > 1 {
+			log.Warn("driver does not support multiple sockets")
+		}
+		if len(listeners) == 0 {
+			log.Debug("launching volume handler.")
+			go func() { errCh <- h.ServeUnix("zfs", 0) }()
+		} else {
+			l := listeners[0]
+			log.WithField("listener", l.Addr().String()).Debug("launching volume handler")
+			go func() { errCh <- h.Serve(l) }()
+		}
 	} else {
-		l := listeners[0]
-		log.WithField("listener", l.Addr().String()).Debug("launching volume handler")
-		go func() { errCh <- h.Serve(l) }()
+		socket, err := net.Listen("unix", ctx.String("socket-path"))
+		if err != nil {
+			panic(err)
+		}
+		log.WithField("listener", socket.Addr().String()).Debug("launching volume handler")
+		go func() { errCh <- h.Serve(socket) }()
 	}
 
 	c := make(chan os.Signal)
